@@ -114,6 +114,125 @@
     }
   </style>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body>
+
+  <h1>P2P Видеочат</h1>
+  <div id="status">Инициализация камеры...</div>
+
+  <div class="card" id="room-controls">
+    <div id="join-section">
+      <label for="room-input" style="font-size: 14px; color: #aaa;">Введите имя или номер комнаты:</label>
+      <div class="input-row">
+        <input type="text" id="room-input" placeholder="Например: dublin, coffee, 777">
+        <button id="join-btn">Создать / Войти</button>
+      </div>
+      
+      <div style="margin-top: 14px; font-size: 13px; color: #888;">Сейчас ждут собеседника:</div>
+      <div class="room-tags" id="available-rooms">
+        <span style="color: #666; font-size: 13px;">Свободных комнат нет. Создайте первую!</span>
+      </div>
+    </div>
+
+    <div id="call-section" style="display: none;">
+      <div id="current-room-info" style="font-size: 14px; margin-bottom: 8px; color: #aaa;"></div>
+      <button id="leave-btn" class="btn-leave">Покинуть комнату</button>
+    </div>
+  </div>
+
+  <div class="video-grid">
+    <div class="video-card">
+      <span>Вы (локальное видео)</span>
+      <video id="local-video" autoplay muted playsinline></video>
+    </div>
+    <div class="video-card">
+      <span>Собеседник</span>
+      <video id="remote-video" autoplay playsinline></video>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>      border-radius: 8px;
+      border: 1px solid #444;
+      background: #2a2a2a;
+      color: #fff;
+      font-size: 15px;
+    }
+    button {
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 15px;
+      transition: background 0.2s;
+    }
+    button:hover { background: #1d4ed8; }
+    .btn-leave {
+      background: #dc2626;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .btn-leave:hover { background: #b91c1c; }
+    .room-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .tag {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tag:hover { background: #383838; }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #22c55e;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      width: 100%;
+      max-width: 800px;
+    }
+    .video-card {
+      background: #1e1e1e;
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .video-card span { margin-bottom: 8px; font-size: 14px; color: #888; }
+    video {
+      width: 100%;
+      height: 240px;
+      background: #000;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+    #status {
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #60a5fa;
+      text-align: center;
+    }
+  </style>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <!-- MQTT клиент для координации списка открытых комнат -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 </head>
