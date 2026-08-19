@@ -67,12 +67,22 @@
     .tag {
       background: #2a2a2a;
       border: 1px solid #444;
-      padding: 4px 10px;
+      padding: 6px 12px;
       border-radius: 6px;
       font-size: 13px;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
     .tag:hover { background: #383838; }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #22c55e;
+      border-radius: 50%;
+      display: inline-block;
+    }
     .video-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -104,6 +114,8 @@
     }
   </style>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- MQTT клиент для координации списка открытых комнат -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 </head>
 <body>
 
@@ -114,20 +126,17 @@
     <div id="join-section">
       <label for="room-input" style="font-size: 14px; color: #aaa;">Введите имя или номер комнаты:</label>
       <div class="input-row">
-        <input type="text" id="room-input" placeholder="Например: dublin, coffee, 777">
-        <button id="join-btn">Войти</button>
+        <input type="text" id="room-input" placeholder="Например: meeting, dubai, 777">
+        <button id="join-btn">Создать / Войти</button>
       </div>
       
-      <div class="room-tags">
-        <span style="font-size: 13px; color: #888; align-self: center;">Комнаты:</span>
-        <span class="tag" onclick="quickJoin('room-1')">room-1</span>
-        <span class="tag" onclick="quickJoin('room-2')">room-2</span>
-        <span class="tag" onclick="quickJoin('dubai-moscow')">dubai-moscow</span>
-        <span class="tag" onclick="quickJoin('coffee-break')">coffee-break</span>
+      <div style="margin-top: 14px; font-size: 13px; color: #888;">Сейчас ждут собеседника (1 чел.):</div>
+      <div class="room-tags" id="available-rooms">
+        <span style="color: #666; font-size: 13px;">Свободных комнат нет. Создайте первую!</span>
       </div>
     </div>
 
-    <!-- Блок отключения -->
+    <!-- Блок управления внутри звонка -->
     <div id="call-section" style="display: none;">
       <div id="current-room-info" style="font-size: 14px; margin-bottom: 8px; color: #aaa;"></div>
       <button id="leave-btn" class="btn-leave">Покинуть комнату</button>
