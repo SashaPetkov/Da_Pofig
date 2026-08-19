@@ -2,28 +2,28 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Видеочат</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Видеочат по комнатам</title>
   <style>
     body {
       font-family: system-ui, -apple-system, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 16px;
+      padding: 24px;
       background: #121212;
       color: #eaeaea;
       margin: 0;
     }
-    h1 { margin-bottom: 8px; font-size: 22px; }
+    h1 { margin-bottom: 8px; font-size: 24px; }
     .card {
       background: #1e1e1e;
       border: 1px solid #333;
-      padding: 16px;
+      padding: 16px 20px;
       border-radius: 12px;
       width: 100%;
       max-width: 480px;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
       box-sizing: border-box;
     }
     .input-row {
@@ -35,139 +35,6 @@
       flex: 1;
       padding: 10px 14px;
       border-radius: 8px;
-      border: 1px solid #444;
-      background: #2a2a2a;
-      color: #fff;
-      font-size: 15px;
-    }
-    button {
-      padding: 10px 16px;
-      border-radius: 8px;
-      border: none;
-      background: #2563eb;
-      color: #fff;
-      font-weight: 500;
-      cursor: pointer;
-      font-size: 15px;
-      transition: background 0.2s;
-    }
-    button:hover { background: #1d4ed8; }
-    .btn-leave {
-      background: #dc2626;
-      width: 100%;
-      margin-top: 10px;
-    }
-    .btn-leave:hover { background: #b91c1c; }
-    .btn-start {
-      background: #16a34a;
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
-    }
-    .btn-start:hover { background: #15803d; }
-    .room-tags {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 12px;
-    }
-    .tag {
-      background: #2a2a2a;
-      border: 1px solid #444;
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-size: 13px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .tag:hover { background: #383838; }
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      background-color: #22c55e;
-      border-radius: 50%;
-      display: inline-block;
-    }
-    .video-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 12px;
-      width: 100%;
-      max-width: 800px;
-    }
-    .video-card {
-      background: #1e1e1e;
-      border-radius: 12px;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .video-card span { margin-bottom: 6px; font-size: 13px; color: #888; }
-    video {
-      width: 100%;
-      height: 220px;
-      background: #000;
-      border-radius: 8px;
-      object-fit: cover;
-    }
-    #status {
-      margin-bottom: 12px;
-      font-size: 14px;
-      color: #60a5fa;
-      text-align: center;
-    }
-  </style>
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-</head>
-<body>
-
-  <h1>P2P Видеочат</h1>
-  <div id="status">Нажмите кнопку для включения камеры</div>
-
-  <!-- Экран запроса камеры для мобилок -->
-  <div class="card" id="perm-section">
-    <button id="enable-media-btn" class="btn-start">Включить камеру и микрофон</button>
-  </div>
-
-  <!-- Блок управления комнатой -->
-  <div class="card" id="room-controls" style="display: none;">
-    <div id="join-section">
-      <label for="room-input" style="font-size: 14px; color: #aaa;">Введите имя комнаты:</label>
-      <div class="input-row">
-        <input type="text" id="room-input" placeholder="Например: dublin, coffee">
-        <button id="join-btn">Войти</button>
-      </div>
-
-      <div style="margin-top: 14px; font-size: 13px; color: #888;">Комнаты с ожиданием:</div>
-      <div class="room-tags" id="available-rooms">
-        <span style="color: #666; font-size: 13px;">Поиск комнат...</span>
-      </div>
-    </div>
-
-    <!-- Кнопка отключения -->
-    <div id="call-section" style="display: none;">
-      <div id="current-room-info" style="font-size: 14px; margin-bottom: 8px;"></div>
-      <button id="leave-btn" class="btn-leave">Покинуть комнату</button>
-    </div>
-  </div>
-
-  <div class="video-grid">
-    <div class="video-card">
-      <span>Вы</span>
-      <video id="local-video" autoplay muted playsinline webkit-playsinline></video>
-    </div>
-    <div class="video-card">
-      <span>Собеседник</span>
-      <video id="remote-video" autoplay playsinline webkit-playsinline></video>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
-</body>
-</html>      border-radius: 8px;
       border: 1px solid #444;
       background: #2a2a2a;
       color: #fff;
@@ -204,18 +71,8 @@
       border-radius: 6px;
       font-size: 13px;
       cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
     }
     .tag:hover { background: #383838; }
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      background-color: #22c55e;
-      border-radius: 50%;
-      display: inline-block;
-    }
     .video-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -253,31 +110,33 @@
   <h1>P2P Видеочат</h1>
   <div id="status">Инициализация камеры...</div>
 
-  <!-- Блок управления комнатой -->
   <div class="card" id="room-controls">
     <div id="join-section">
       <label for="room-input" style="font-size: 14px; color: #aaa;">Введите имя или номер комнаты:</label>
       <div class="input-row">
-        <input type="text" id="room-input" placeholder="Например: room-1, meeting">
+        <input type="text" id="room-input" placeholder="Например: dublin, coffee, 777">
         <button id="join-btn">Войти</button>
       </div>
-
-      <div style="margin-top: 14px; font-size: 13px; color: #888;">Комнаты, где ждут собеседника:</div>
-      <div class="room-tags" id="available-rooms">
-        <span style="color: #666; font-size: 13px;">Поиск комнат...</span>
+      
+      <div class="room-tags">
+        <span style="font-size: 13px; color: #888; align-self: center;">Комнаты:</span>
+        <span class="tag" onclick="quickJoin('room-1')">room-1</span>
+        <span class="tag" onclick="quickJoin('room-2')">room-2</span>
+        <span class="tag" onclick="quickJoin('dubai-moscow')">dubai-moscow</span>
+        <span class="tag" onclick="quickJoin('coffee-break')">coffee-break</span>
       </div>
     </div>
 
-    <!-- Кнопка отключения (скрыта по умолчанию) -->
+    <!-- Блок отключения -->
     <div id="call-section" style="display: none;">
-      <div id="current-room-info" style="font-size: 14px; margin-bottom: 8px;"></div>
+      <div id="current-room-info" style="font-size: 14px; margin-bottom: 8px; color: #aaa;"></div>
       <button id="leave-btn" class="btn-leave">Покинуть комнату</button>
     </div>
   </div>
 
   <div class="video-grid">
     <div class="video-card">
-      <span>Вы</span>
+      <span>Вы (локальное видео)</span>
       <video id="local-video" autoplay muted playsinline></video>
     </div>
     <div class="video-card">
