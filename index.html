@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>P2P Видеозвонок</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      background: #121212;
+      color: #fff;
+    }
+    .video-container {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 20px 0;
+    }
+    video {
+      width: 400px;
+      max-width: 90vw;
+      height: 300px;
+      background: #222;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    input, button {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #222;
+      color: #fff;
+    }
+    button {
+      background: #0070f3;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover { background: #005bb5; }
+    #status { margin-top: 10px; color: #888; }
+  </style>
+  <!-- Подключение PeerJS через CDN -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body>
+
+  <h1>P2P Видеосвязь</h1>
+  
+  <p>Ваш ID: <strong id="my-id">Генерация...</strong></p>
+
+  <div class="controls">
+    <input type="text" id="peer-id-input" placeholder="Введите ID собеседника">
+    <button id="call-btn">Позвонить</button>
+  </div>
+
+  <div class="video-container">
+    <div>
+      <p>Вы</p>
+      <video id="local-video" autoplay muted playsinline></video>
+    </div>
+    <div>
+      <p>Собеседник</p>
+      <video id="remote-video" autoplay playsinline></video>
+    </div>
+  </div>
+
+  <div id="status"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
