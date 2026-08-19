@@ -25,16 +25,215 @@ const peerConfig = {
   }
 };
 
-// --- Модуль трекинга комнат в реальном времени (MQTT) ---
-const MQTT_TOPIC = 'p2p-video-room-discovery-channel-v2';
-let mqttClient = null;
-const activeRoomsMap = new Map(); // roomName -> timestamp
+// --- 1. ПЕРВООЧЕРЕДНАЯ ИНИЦИАЛИЗАЦИЯ КАМЕРЫ ---
+async function initCamera() {
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    localVideo.srcObject = localStream;
+    statusElem.textContent = 'Камера готова. Введите название комнаты или выберите из списка.';
+    
+    // Подключаем обмен списком комнат только ПОСЛЕ успешного запуска камеры
+    initWsLobby();
 
-function initLobbyTracker() {
-  const clientId = 'client_' + Math.random().toString(16).substring(2, 10);
-  mqttClient = new Paho.MQTT.Client('broker.emqx.io', 8084, clientId);
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomParam = urlParams.get('room');
+    if (roomParam) {
+      roomInput.value = roomParam;
+      joinRoom(roomParam);
+    }
+  } catch (err) {
+    statusElem.textContent = 'Ошибка доступа к камере/микрофону: ' + err.message;
+  }
+}
 
-  mqttClient.onMessageArrived = (message) => {
+// --- 2. ЛОББИ КОМНАТ ЧЕРЕЗ ЧИСТЫЙ WEBSOCKET ---
+let ws = null;
+const activeRoomsMap = new Map();
+
+function initWsLobby() {
+  // Публичный открытый сокет-канал для координации
+  ws = new WebSocket('wss://demo.piesocket.com/v3/channel_p2p_video_lobby?api_key=VC3oaf مواجهة-demo-key-123456');
+
+  ws.onopen = () => {
+    // При подключении спрашиваем у всех: "Кто сейчас ждет?"
+    sendWsMessage('discover', '');
+    setInterval(cleanExpiredRooms, 3000);
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      
+      if (data.action === 'discover') {
+        if (isHost && currentRoom && !currentCall) {
+          sendWsMessage('waiting', currentRoom);
+        }
+      } else if (data.action === 'waiting') {
+        if (data.room !== currentRoom) {
+          activeRoomsMap.set(data.room, Date.now());
+          renderRoomsList();
+        }
+      } else if (data.action === 'busy' || data.action === 'closed') {
+        activeRoomsMap.delete(data.room);
+        renderRoomsList();
+      }
+    } catch (e) {}
+  };
+
+  ws.onerror = () => {};
+}
+
+function sendWsMessage(action, room) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ action, room, t: Date.now() }));
+  }
+}
+
+function cleanExpiredRooms() {
+  const now = Date.now();
+  let changed = false;
+  for (const [room, time] of activeRoomsMap.entries()) {
+    if (now - time > 8000) {
+      activeRoomsMap.delete(room);
+      changed = true;
+    }
+  }
+  if (changed) renderRoomsList();
+}
+
+function renderRoomsList() {
+  availableRoomsElem.innerHTML = '';
+  const rooms = Array.from(activeRoomsMap.keys());
+
+  if (rooms.length === 0) {
+    availableRoomsElem.innerHTML = '<span style="color: #666; font-size: 13px;">Свободных комнат нет. Создайте первую!</span>';
+    return;
+  }
+
+  rooms.forEach(room => {
+    const tag = document.createElement('span');
+    tag.className = 'tag';
+    tag.innerHTML = `<span class="status-dot"></span>${room} (ждёт 1)`;
+    tag.onclick = () => {
+      roomInput.value = room;
+      joinRoom(room);
+    };
+    availableRoomsElem.appendChild(tag);
+  });
+}
+
+// --- 3. ЗВОНКИ WEBRTC (PEERJS) ---
+function joinRoom(rawRoomName) {
+  const room = rawRoomName.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '');
+  if (!room) {
+    alert('Используйте только латинские буквы и цифры');
+    return;
+  }
+
+  currentRoom = room;
+  window.history.pushState({}, '', `?room=${room}`);
+
+  joinSection.style.display = 'none';
+  callSection.style.display = 'block';
+  currentRoomInfo.textContent = `Текущая комната: ${room}`;
+
+  if (peer) peer.destroy();
+
+  const hostId = `p2p-call-${room}-host`;
+  peer = new Peer(hostId, peerConfig);
+
+  peer.on('open', () => {
+    isHost = true;
+    statusElem.textContent = `Вы создали комнату «${room}». Ссылка скопирована! Ожидаем собеседника...`;
+    navigator.clipboard?.writeText(window.location.href);
+
+    sendWsMessage('waiting', currentRoom);
+    heartbeatTimer = setInterval(() => sendWsMessage('waiting', currentRoom), 2500);
+  });
+
+  peer.on('call', (call) => {
+    if (heartbeatTimer) clearInterval(heartbeatTimer);
+    sendWsMessage('busy', currentRoom);
+
+    statusElem.textContent = 'Собеседник подключился. Звонок активен.';
+    call.answer(localStream);
+    handleStream(call);
+  });
+
+  peer.on('error', (err) => {
+    if (err.type === 'unavailable-id') {
+      connectAsGuest(room, hostId);
+    } else {
+      statusElem.textContent = 'Ошибка Peer: ' + err.message;
+    }
+  });
+}
+
+function connectAsGuest(room, hostId) {
+  isHost = false;
+  statusElem.textContent = `Подключение к владельцу комнаты «${room}»...`;
+  
+  peer = new Peer(peerConfig);
+
+  peer.on('open', () => {
+    sendWsMessage('busy', room);
+    const call = peer.call(hostId, localStream);
+    handleStream(call);
+  });
+
+  peer.on('call', (call) => {
+    call.answer(localStream);
+    handleStream(call);
+  });
+}
+
+function handleStream(call) {
+  currentCall = call;
+  call.on('stream', (remoteStream) => {
+    remoteVideo.srcObject = remoteStream;
+    statusElem.textContent = 'Связь установлена!';
+  });
+  call.on('close', () => {
+    remoteVideo.srcObject = null;
+    statusElem.textContent = 'Собеседник отключился.';
+  });
+}
+
+// --- 4. ВЫХОД ИЗ КОМНАТЫ ---
+function leaveRoom() {
+  if (heartbeatTimer) clearInterval(heartbeatTimer);
+  if (currentRoom) sendWsMessage('closed', currentRoom);
+
+  if (currentCall) {
+    currentCall.close();
+    currentCall = null;
+  }
+  if (peer) {
+    peer.destroy();
+    peer = null;
+  }
+
+  remoteVideo.srcObject = null;
+  currentRoom = null;
+  isHost = false;
+
+  window.history.pushState({}, '', window.location.pathname);
+
+  joinSection.style.display = 'block';
+  callSection.style.display = 'none';
+  statusElem.textContent = 'Вы вышли из комнаты. Выберите новую.';
+
+  sendWsMessage('discover', '');
+}
+
+window.addEventListener('beforeunload', () => {
+  if (currentRoom && isHost) sendWsMessage('closed', currentRoom);
+});
+
+joinBtn.addEventListener('click', () => joinRoom(roomInput.value));
+leaveBtn.addEventListener('click', leaveRoom);
+
+initCamera();  mqttClient.onMessageArrived = (message) => {
     try {
       const data = JSON.parse(message.payloadString);
       handleLobbySignal(data);
