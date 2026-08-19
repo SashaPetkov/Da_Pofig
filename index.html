@@ -52,6 +52,12 @@
       transition: background 0.2s;
     }
     button:hover { background: #1d4ed8; }
+    .btn-leave {
+      background: #dc2626;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .btn-leave:hover { background: #b91c1c; }
     .room-tags {
       display: flex;
       gap: 8px;
@@ -65,8 +71,18 @@
       border-radius: 6px;
       font-size: 13px;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
     .tag:hover { background: #383838; }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #22c55e;
+      border-radius: 50%;
+      display: inline-block;
+    }
     .video-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -106,10 +122,23 @@
 
   <!-- Блок управления комнатой -->
   <div class="card" id="room-controls">
-    <label for="room-input" style="font-size: 14px; color: #aaa;">Введите имя или номер комнаты:</label>
-    <div class="input-row">
-      <input type="text" id="room-input">
-      <button id="join-btn">Войти</button>
+    <div id="join-section">
+      <label for="room-input" style="font-size: 14px; color: #aaa;">Введите имя или номер комнаты:</label>
+      <div class="input-row">
+        <input type="text" id="room-input" placeholder="Например: room-1, meeting">
+        <button id="join-btn">Войти</button>
+      </div>
+
+      <div style="margin-top: 14px; font-size: 13px; color: #888;">Комнаты, где ждут собеседника:</div>
+      <div class="room-tags" id="available-rooms">
+        <span style="color: #666; font-size: 13px;">Поиск комнат...</span>
+      </div>
+    </div>
+
+    <!-- Кнопка отключения (скрыта по умолчанию) -->
+    <div id="call-section" style="display: none;">
+      <div id="current-room-info" style="font-size: 14px; margin-bottom: 8px;"></div>
+      <button id="leave-btn" class="btn-leave">Покинуть комнату</button>
     </div>
   </div>
 
