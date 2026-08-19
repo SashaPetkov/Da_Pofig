@@ -3,78 +3,133 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>P2P Видеозвонок</title>
+  <title>Видеочат по комнатам</title>
   <style>
     body {
-      font-family: system-ui, sans-serif;
+      font-family: system-ui, -apple-system, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 20px;
+      padding: 24px;
       background: #121212;
-      color: #fff;
+      color: #eaeaea;
+      margin: 0;
     }
-    .video-container {
+    h1 { margin-bottom: 8px; font-size: 24px; }
+    .card {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      padding: 16px 20px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 20px;
+      box-sizing: border-box;
+    }
+    .input-row {
       display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin: 20px 0;
+      gap: 8px;
+      margin-top: 10px;
     }
+    input {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #2a2a2a;
+      color: #fff;
+      font-size: 15px;
+    }
+    button {
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 15px;
+      transition: background 0.2s;
+    }
+    button:hover { background: #1d4ed8; }
+    .room-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .tag {
+      background: #2a2a2a;
+      border: 1px solid #444;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .tag:hover { background: #383838; }
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      width: 100%;
+      max-width: 800px;
+    }
+    .video-card {
+      background: #1e1e1e;
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .video-card span { margin-bottom: 8px; font-size: 14px; color: #888; }
     video {
-      width: 400px;
-      max-width: 90vw;
-      height: 300px;
-      background: #222;
+      width: 100%;
+      height: 240px;
+      background: #000;
       border-radius: 8px;
       object-fit: cover;
     }
-    .controls {
-      display: flex;
-      gap: 10px;
-      align-items: center;
+    #status {
+      margin-bottom: 16px;
+      font-size: 14px;
+      color: #60a5fa;
+      text-align: center;
     }
-    input, button {
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid #444;
-      background: #222;
-      color: #fff;
-    }
-    button {
-      background: #0070f3;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover { background: #005bb5; }
-    #status { margin-top: 10px; color: #888; }
   </style>
-  <!-- Подключение PeerJS через CDN -->
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
 
-  <h1>P2P Видеосвязь</h1>
-  
-  <p>Ваш ID: <strong id="my-id">Генерация...</strong></p>
+  <h1>P2P Видеочат</h1>
+  <div id="status">Инициализация камеры...</div>
 
-  <div class="controls">
-    <input type="text" id="peer-id-input" placeholder="Введите ID собеседника">
-    <button id="call-btn">Позвонить</button>
+  <!-- Блок управления комнатой -->
+  <div class="card" id="room-controls">
+    <label for="room-input" style="font-size: 14px; color: #aaa;">Введите имя или номер комнаты:</label>
+    <div class="input-row">
+      <input type="text" id="room-input" placeholder="Например: dublin, coffee, 777">
+      <button id="join-btn">Войти</button>
+    </div>
+    
+    <div class="room-tags">
+      <span style="font-size: 13px; color: #888; align-self: center;">Популярные:</span>
+      <span class="tag" onclick="quickJoin('dubai-moscow')">dubai-moscow</span>
+      <span class="tag" onclick="quickJoin('coffee-break')">coffee-break</span>
+      <span class="tag" onclick="quickJoin('room-101')">room-101</span>
+    </div>
   </div>
 
-  <div class="video-container">
-    <div>
-      <p>Вы</p>
+  <div class="video-grid">
+    <div class="video-card">
+      <span>Вы (локальное видео)</span>
       <video id="local-video" autoplay muted playsinline></video>
     </div>
-    <div>
-      <p>Собеседник</p>
+    <div class="video-card">
+      <span>Собеседник</span>
       <video id="remote-video" autoplay playsinline></video>
     </div>
   </div>
-
-  <div id="status"></div>
 
   <script src="script.js"></script>
 </body>
