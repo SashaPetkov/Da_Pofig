@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Видеочат по комнатам</title>
+  <title>Видеочат</title>
   <style>
     body {
       font-family: system-ui, -apple-system, sans-serif;
@@ -111,18 +111,11 @@
       <input type="text" id="room-input" placeholder="Например: dublin, coffee, 777">
       <button id="join-btn">Войти</button>
     </div>
-    
-    <div class="room-tags">
-      <span style="font-size: 13px; color: #888; align-self: center;">Популярные:</span>
-      <span class="tag" onclick="quickJoin('dubai-moscow')">dubai-moscow</span>
-      <span class="tag" onclick="quickJoin('coffee-break')">coffee-break</span>
-      <span class="tag" onclick="quickJoin('room-101')">room-101</span>
-    </div>
   </div>
 
   <div class="video-grid">
     <div class="video-card">
-      <span>Вы (локальное видео)</span>
+      <span>Вы</span>
       <video id="local-video" autoplay muted playsinline></video>
     </div>
     <div class="video-card">
