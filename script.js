@@ -1,4 +1,7 @@
 const statusElem = document.getElementById('status');
+const manualPermBox = document.getElementById('manual-perm-box');
+const manualCamBtn = document.getElementById('manual-cam-btn');
+const roomControls = document.getElementById('room-controls');
 const joinSection = document.getElementById('join-section');
 const callSection = document.getElementById('call-section');
 const currentRoomInfo = document.getElementById('current-room-info');
@@ -15,7 +18,6 @@ let currentCall = null;
 let currentRoom = null;
 let isHost = false;
 
-// STUN серверы
 const peerConfig = {
   config: {
     iceServers: [
@@ -25,16 +27,241 @@ const peerConfig = {
   }
 };
 
-// 1. Максимально стабильная инициализация камеры
-async function initCamera() {
+// 1. Безопасная инициализация с защитой от вечного зависания
+async function startCamera() {
+  // Проверка на запуск внутри WebView мессенджеров
+  const ua = navigator.userAgent || '';
+  const isInApp = /Telegram|VK|Instagram|WhatsApp|FB_IAB/i.test(ua);
+  if (isInApp) {
+    statusElem.style.color = '#f59e0b';
+    statusElem.textContent = 'Внимание: встроенный браузер мессенджера блокирует камеру. Нажмите меню ⋮ и выберите "Открыть в Safari / Chrome".';
+  } else {
+    statusElem.textContent = 'Запрос доступа к камере...';
+  }
+
+  // Запуск таймера: если за 3.5 сек браузер не ответил, показываем явную кнопку
+  const timeoutId = setTimeout(() => {
+    if (!localStream) {
+      manualPermBox.style.display = 'block';
+      statusElem.textContent = 'Нажмите зеленую кнопку ниже, чтобы предоставить доступ к камере.';
+    }
+  }, 3500);
+
   try {
-    localStream = await navigator.mediaDevices.getUserMedia({
+    // Базовый запрос
+    const stream = await navigator.mediaDevices.getUserMedia({
       video: true,
       audio: true
     });
 
+    clearTimeout(timeoutId);
+    manualPermBox.style.display = 'none';
+    roomControls.style.display = 'block';
+    
+    localStream = stream;
+    localVideo.srcObject = stream;
     localVideo.muted = true;
-    localVideo.srcObject = localStream;
+    
+    // Прямой вызов play для мобильных
+    try { await localVideo.play(); } catch (e) {}
+
+    statusElem.style.color = '#60a5fa';
+    statusElem.textContent = 'Камера готова. Введите название комнаты.';
+
+    initRoomDiscovery();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomParam = urlParams.get('room');
+    if (roomParam) {
+      roomInput.value = roomParam;
+      joinRoom(roomParam);
+    }
+  } catch (err) {
+    clearTimeout(timeoutId);
+    manualPermBox.style.display = 'block';
+    statusElem.style.color = '#ef4444';
+    
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      statusElem.textContent = 'Доступ запрещен. Разрешите камеру в настройках браузера (значок замка / аА в строке адреса) и нажмите кнопку ниже.';
+    } else {
+      statusElem.textContent = `Ошибка камеры: ${err.name} (${err.message}). Нажмите кнопку для повтора.`;
+    }
+  }
+}
+
+// 2. Локальный трекинг комнат
+function initRoomDiscovery() {
+  updateRoomsDisplay();
+  try {
+    const channel = new BroadcastChannel('p2p_rooms_sync');
+    channel.onmessage = () => updateRoomsDisplay();
+  } catch (e) {}
+  setInterval(updateRoomsDisplay, 3000);
+}
+
+function registerRoom(roomName) {
+  try {
+    const rooms = getStoredRooms();
+    rooms[roomName] = Date.now();
+    localStorage.setItem('p2p_live_rooms', JSON.stringify(rooms));
+    notifyUpdate();
+    updateRoomsDisplay();
+  } catch (e) {}
+}
+
+function unregisterRoom(roomName) {
+  try {
+    const rooms = getStoredRooms();
+    delete rooms[roomName];
+    localStorage.setItem('p2p_live_rooms', JSON.stringify(rooms));
+    notifyUpdate();
+    updateRoomsDisplay();
+  } catch (e) {}
+}
+
+function getStoredRooms() {
+  try {
+    return JSON.parse(localStorage.getItem('p2p_live_rooms')) || {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function notifyUpdate() {
+  try {
+    new BroadcastChannel('p2p_rooms_sync').postMessage('update');
+  } catch (e) {}
+}
+
+function updateRoomsDisplay() {
+  const roomsObj = getStoredRooms();
+  const now = Date.now();
+  const activeRooms = [];
+
+  for (const [name, time] of Object.entries(roomsObj)) {
+    if (now - time < 20000 && name !== currentRoom) {
+      activeRooms.push(name);
+    }
+  }
+
+  availableRoomsElem.innerHTML = '';
+  if (activeRooms.length === 0) {
+    availableRoomsElem.innerHTML = '<span style="color: #666; font-size: 13px;">Свободных комнат нет. Создайте первую!</span>';
+    return;
+  }
+
+  activeRooms.forEach(room => {
+    const tag = document.createElement('span');
+    tag.className = 'tag';
+    tag.innerHTML = `<span class="status-dot"></span>${room} (ждёт 1)`;
+    tag.onclick = () => {
+      roomInput.value = room;
+      joinRoom(room);
+    };
+    availableRoomsElem.appendChild(tag);
+  });
+}
+
+// 3. Логика звонка
+function joinRoom(rawRoomName) {
+  const room = rawRoomName.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '');
+  if (!room) {
+    alert('Используйте латинские буквы и цифры');
+    return;
+  }
+
+  currentRoom = room;
+  window.history.pushState({}, '', `?room=${room}`);
+
+  joinSection.style.display = 'none';
+  callSection.style.display = 'block';
+  currentRoomInfo.textContent = `Текущая комната: ${room}`;
+
+  if (peer) peer.destroy();
+
+  const hostId = `p2p-call-${room}-host`;
+  peer = new Peer(hostId, peerConfig);
+
+  peer.on('open', () => {
+    isHost = true;
+    statusElem.textContent = `Вы создали комнату «${room}». Ссылка скопирована! Ждем собеседника...`;
+    navigator.clipboard?.writeText(window.location.href).catch(() => {});
+    registerRoom(room);
+  });
+
+  peer.on('call', (call) => {
+    unregisterRoom(room);
+    statusElem.textContent = 'Собеседник подключился. Звонок активен.';
+    call.answer(localStream);
+    handleStream(call);
+  });
+
+  peer.on('error', (err) => {
+    if (err.type === 'unavailable-id') {
+      connectAsGuest(room, hostId);
+    } else {
+      statusElem.textContent = 'Ошибка Peer: ' + err.message;
+    }
+  });
+}
+
+function connectAsGuest(room, hostId) {
+  isHost = false;
+  statusElem.textContent = `Подключение к комнате «${room}»...`;
+  unregisterRoom(room);
+
+  peer = new Peer(peerConfig);
+
+  peer.on('open', () => {
+    const call = peer.call(hostId, localStream);
+    handleStream(call);
+  });
+
+  peer.on('call', (call) => {
+    call.answer(localStream);
+    handleStream(call);
+  });
+}
+
+function handleStream(call) {
+  currentCall = call;
+  call.on('stream', (remoteStream) => {
+    remoteVideo.srcObject = remoteStream;
+    remoteVideo.play().catch(() => {});
+    statusElem.textContent = 'Связь установлена!';
+  });
+  call.on('close', () => {
+    remoteVideo.srcObject = null;
+    statusElem.textContent = 'Собеседник отключился.';
+  });
+}
+
+function leaveRoom() {
+  if (currentRoom) unregisterRoom(currentRoom);
+  if (currentCall) { currentCall.close(); currentCall = null; }
+  if (peer) { peer.destroy(); peer = null; }
+
+  remoteVideo.srcObject = null;
+  currentRoom = null;
+  isHost = false;
+
+  window.history.pushState({}, '', window.location.pathname);
+  joinSection.style.display = 'block';
+  callSection.style.display = 'none';
+  statusElem.textContent = 'Вы вышли из комнаты.';
+  updateRoomsDisplay();
+}
+
+window.addEventListener('beforeunload', () => {
+  if (currentRoom && isHost) unregisterRoom(currentRoom);
+});
+
+manualCamBtn.addEventListener('click', startCamera);
+joinBtn.addEventListener('click', () => joinRoom(roomInput.value));
+leaveBtn.addEventListener('click', leaveRoom);
+
+// Автозапуск при загрузке
+startCamera();    localVideo.srcObject = localStream;
     
     // Безопасный запуск воспроизведения для Safari
     try {
